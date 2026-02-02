@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>digitalstore</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        header { background: #2c3e50; color: white; padding: 20px; text-align: center; }
+        nav { background: #34495e; padding: 10px; display: flex; justify-content: center; gap: 20px; }
+        nav button { background: #3498db; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
+        nav button:hover { background: #2980b9; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 20px; }
+        .productos { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
+        .producto { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .producto img { width: 100%; height: 180px; object-fit: contain; background: #fff; border-radius: 5px; margin-bottom: 10px; padding: 10px; }
+        .producto h3 { color: #2c3e50; margin-bottom: 10px; font-size: 18px; }
+        .producto .precio { color: #27ae60; font-size: 22px; font-weight: bold; margin: 10px 0; }
+        .producto button { width: 100%; background: #27ae60; color: white; border: none; padding: 10px; cursor: pointer; border-radius: 5px; margin-top: 10px; }
+        .producto input, .producto select { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+        
+        .carrito-flotante { position: fixed; bottom: 20px; right: 20px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 320px; max-height: 80vh; overflow-y: auto; display: none; z-index: 1000; }
+        .btn-toggle-carrito { position: fixed; bottom: 20px; right: 20px; background: #e67e22; color: white; border: none; padding: 15px 20px; border-radius: 50px; cursor: pointer; font-weight: bold; z-index: 1001; }
+        .item-carrito { background: #f8f9fa; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        .total { font-size: 20px; font-weight: bold; color: #27ae60; margin-top: 15px; padding-top: 15px; border-top: 2px solid #ddd; }
+        .btn-finalizar { width: 100%; background: #27ae60; color: white; border: none; padding: 15px; cursor: pointer; border-radius: 5px; margin-top: 10px; font-size: 16px; font-weight: bold; }
+        .categoria-tag { display: inline-block; background: #3498db; color: white; padding: 5px 10px; border-radius: 3px; font-size: 12px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🛒 Digital Store NC</h1>
+        <p>Productos digitales y servicios al mejor precio</p>
+    </header>
+    
+    <nav>
+        <button onclick="filtrarCategoria('todos')">Todos</button>
+        <button onclick="filtrarCategoria('cursos')">Cursos</button>
+        <button onclick="filtrarCategoria('juegos')">Juegos</button>
+        <button onclick="filtrarCategoria('servicios')">Servicios</button>
+        <button onclick="filtrarCategoria('software')">Software</button>
+    </nav>
+    
+    <div class="container">
+        <div id="productos" class="productos"></div>
+    </div>
+
+    <button class="btn-toggle-carrito" onclick="toggleCarrito()">🛒 Ver/Cerrar Carrito</button>
+
+    <div class="carrito-flotante" id="carrito-ventana">
+        <h3>🛒 Mi Carrito</h3>
+        <div id="carrito-items"></div>
+        <div class="total">Total: <span id="total">0.00</span> €</div>
+        <button class="btn-finalizar" onclick="finalizarCompra()">Realiza compra por WhatsApp</button>
+    </div>
+
+    <script>
+        const productos = [
+            // CURSOS
+            {id: 1, nombre: "Curso JavaScript", categoria: "cursos", precio: 49.99, descripcion: "Aprende JS desde cero", img: "https://cdn-icons-png.flaticon.com/512/5968/5968292.png"},
+            {id: 2, nombre: "Curso Python", categoria: "cursos", precio: 59.99, descripcion: "Python para profesionales", img: "https://cdn-icons-png.flaticon.com/512/5968/5968350.png"},
+            {id: 3, nombre: "Marketing Digital", categoria: "cursos", precio: 39.99, descripcion: "Estrategias de marketing", img: "https://cdn-icons-png.flaticon.com/512/1998/1998087.png"},
+            {id: 4, nombre: "Diseño Gráfico", categoria: "cursos", precio: 44.99, descripcion: "Photoshop e Illustrator", img: "https://cdn-icons-png.flaticon.com/512/2970/2970785.png"},
+            {id: 5, nombre: "Excel Profesional", categoria: "cursos", precio: 29.99, descripcion: "Excel nivel experto", img: "https://cdn-icons-png.flaticon.com/512/732/732220.png"},
+            
+            //
+            {id: 6, nombre: "Free Fire", categoria: "juegos", precio: 0.01, descripcion: "Diamantes Free Fire", requiereID: true, esDiamante: true, unidadNombre: "Diamantes", opciones: [{n: "100 Diamantes", p: 1.00}, {n: "310 Diamantes", p: 3.10}, {n: "520 Diamantes", p: 5.20}, {n: "1060 Diamantes", p: 10.60}, {n: "2180 Diamantes", p: 21.80}, {n: "5600 Diamantes", p: 56.00}], img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Free_Fire_logo.svg/1200px-Free_Fire_logo.svg.png"},
+            {id: 7, nombre: "Fortnite", categoria: "juegos", precio: 0.008, descripcion: "Monedas V-Bucks", requiereID: true, esDiamante: true, unidadNombre: "V-Bucks", opciones: [{n: "1000 V-Bucks", p: 8.00}, {n: "2800 V-Bucks", p: 22.40}, {n: "5000 V-Bucks", p: 40.00}, {n: "13500 V-Bucks", p: 108.00}], img: "https://upload.wikimedia.org/wikipedia/commons/7/7c/Fortnite_F_lettermark_logo.png"},
+            {id: 8, nombre: "PUBG Mobile", categoria: "juegos", precio: 0.012, descripcion: "Monedas UC", requiereID: true, esDiamante: true, unidadNombre: "UC", opciones: [{n: "60 UC", p: 0.72}, {n: "325 UC", p: 3.90}, {n: "660 UC", p: 7.92}, {n: "1800 UC", p: 21.60}, {n: "3850 UC", p: 46.20}, {n: "8100 UC", p: 97.20}], img: "https://e7.pngegg.com/pngimages/833/952/png-clipart-pubg-mobile-logo-video-game-playerunknown-s-battlegrounds-logo-mobile-phones-android-thumbnail.png"},
+            {id: 9, nombre: "Roblox", categoria: "juegos", precio: 0.015, descripcion: "Monedas Robux", requiereID: true, esDiamante: true, unidadNombre: "Robux", opciones: [{n: "400 Robux", p: 6.00}, {n: "800 Robux", p: 12.00}, {n: "1700 Robux", p: 25.50}, {n: "4500 Robux", p: 67.50}, {n: "10000 Robux", p: 150.00}], img: "https://upload.wikimedia.org/wikipedia/commons/3/3a/Roblox_player_icon_black.svg"},
+            {id: 10, nombre: "Clash of Clans", categoria: "juegos", precio: 0.01, descripcion: "Gemas CoC", requiereID: true, esDiamante: true, unidadNombre: "Gemas", opciones: [{n: "500 Gemas", p: 5.00}, {n: "1200 Gemas", p: 12.00}, {n: "2500 Gemas", p: 25.00}, {n: "6500 Gemas", p: 65.00}, {n: "14000 Gemas", p: 140.00}], img: "https://logodownload.org/wp-content/uploads/2017/10/clash-of-clans-logo-2.png"},
+            
+            // MOBILE LEGENDS ACTUALIZADO
+            {
+                id: 21, 
+                nombre: "Mobile Legends", 
+                categoria: "juegos", 
+                requiereID: true, 
+                esDiamante: true, 
+                unidadNombre: "Diamantes", 
+                img: "https://upload.wikimedia.org/wikipedia/en/thumb/9/9e/Mobile_Legends_Bang_Bang_logo.png/250px-Mobile_Legends_Bang_Bang_logo.png",
+                opciones: [
+                    {n: "100 Diamonds (50+50) first recharge", p: 0.99},
+                    {n: "300 Diamonds (150+150) first recharge", p: 2.99},
+                    {n: "500 Diamonds (250+250) first recharge", p: 4.99},
+                    {n: "1000 Diamonds (500+500) first recharge", p: 9.99},
+                    {n: "1160 Diamonds", p: 19.99},
+                    {n: "1770 Diamonds", p: 29.99},
+                    {n: "2975 Diamonds", p: 49.99},
+                    {n: "4165 Diamonds", p: 69.99},
+                    {n: "6000 Diamonds", p: 99.99},
+                    {n: "Twilight Pass", p: 10.00}
+                ]
+            },
+            
+            // SERVICIOS
+            {id: 11, nombre: "Diseño de Logo", categoria: "servicios", precio: 79.99, descripcion: "Logo personalizado", img: "https://cdn-icons-png.flaticon.com/512/1055/1055666.png"},
+            {id: 12, nombre: "Edición de Video", categoria: "servicios", precio: 89.99, descripcion: "Video hasta 10 min", img: "https://cdn-icons-png.flaticon.com/512/4406/4406124.png"},
+            {id: 13, nombre: "Desarrollo Web", categoria: "servicios", precio: 199.99, descripcion: "Sitio web responsive", img: "https://cdn-icons-png.flaticon.com/512/1157/1157109.png"},
+            {id: 14, nombre: "Consultoría SEO", categoria: "servicios", precio: 149.99, descripcion: "Optimización SEO", img: "https://cdn-icons-png.flaticon.com/512/1055/1055644.png"},
+            {id: 15, nombre: "Redes Sociales", categoria: "servicios", precio: 99.99, descripcion: "1 mes de gestión", img: "https://cdn-icons-png.flaticon.com/512/1968/1968641.png"},
+            
+            // SOFTWARE
+            {id: 16, nombre: "Office 365", categoria: "software", precio: 69.99, descripcion: "1 año suscripción", img: "https://cdn-icons-png.flaticon.com/512/732/732221.png"},
+            {id: 17, nombre: "Antivirus", categoria: "software", precio: 39.99, descripcion: "Protección total", img: "https://cdn-icons-png.flaticon.com/512/714/714412.png"},
+            {id: 18, nombre: "VPN Premium", categoria: "software", precio: 49.99, descripcion: "1 año de VPN", img: "https://cdn-icons-png.flaticon.com/512/2092/2092203.png"},
+            {id: 19, nombre: "Adobe Cloud", categoria: "software", precio: 54.99, descripcion: "1 mes de acceso", img: "https://cdn-icons-png.flaticon.com/512/5968/5968397.png"},
+            {id: 20, nombre: "Spotify Premium", categoria: "software", precio: 9.99, descripcion: "1 mes", img: "https://cdn-icons-png.flaticon.com/512/174/174872.png"},
+        ];
+
+        let carrito = [];
+        let categoriaActual = 'todos';
+
+        function toggleCarrito() {
+            const ventana = document.getElementById('carrito-ventana');
+            ventana.style.display = ventana.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function renderizarProductos() {
+            const contenedor = document.getElementById('productos');
+            contenedor.innerHTML = '';
+            const filtrados = categoriaActual === 'todos' ? productos : productos.filter(p => p.categoria === categoriaActual);
+            
+            filtrados.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'producto';
+                div.innerHTML = `
+                    <span class="categoria-tag">${p.categoria.toUpperCase()}</span>
+                    <img src="${p.img}" alt="${p.nombre}">
+                    <h3>${p.nombre}</h3>
+                    <p>${p.descripcion || ''}</p>
+                    <div class="precio">${p.esDiamante ? '' : p.precio.toFixed(2) + ' €'}</div>
+                    ${p.requiereID ? `
+                        <input type="text" id="id-${p.id}" placeholder="ID del Jugador">
+                        <select id="qty-${p.id}">
+                            ${p.opciones.map((opt, index) => `<option value="${index}">${opt.n} - ${opt.p.toFixed(2)} €</option>`).join('')}
+                        </select>
+                    ` : ''}
+                    <button onclick="agregarAlCarrito(${p.id})">Añadir al Carrito</button>
+                `;
+                contenedor.appendChild(div);
+            });
+        }
+
+        function filtrarCategoria(cat) { categoriaActual = cat; renderizarProductos(); }
+
+        function agregarAlCarrito(id) {
+            const p = productos.find(x => x.id === id);
+            let playerID = '', nombreOpcion = p.nombre, precioFinal = p.precio;
+
+            if (p.requiereID) {
+                playerID = document.getElementById(`id-${id}`).value.trim();
+                const index = document.getElementById(`qty-${id}`).value;
+                const seleccion = p.opciones[index];
+                nombreOpcion = `${p.nombre} (${seleccion.n})`;
+                precioFinal = seleccion.p;
+                if (!playerID) { alert('Ingresa tu ID'); return; }
+            }
+            
+            carrito.push({nombre: nombreOpcion, precio: precioFinal, playerID: playerID});
+            actualizarCarrito();
+            alert('Añadido al carrito');
+        }
+
+        function actualizarCarrito() {
+            const contenedor = document.getElementById('carrito-items');
+            const totalElement = document.getElementById('total');
+            contenedor.innerHTML = '';
+            let t = 0;
+            carrito.forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = 'item-carrito';
+                div.innerHTML = `
+                    <strong>${item.nombre}</strong><br>
+                    ${item.playerID ? `<small>ID: ${item.playerID}</small><br>` : ''}
+                    <span>${item.precio.toFixed(2)} €</span>
+                    <button onclick="eliminar(${i})" style="float:right;background:red;color:white;border:none;padding:2px 5px;cursor:pointer;border-radius:3px;">Eliminar</button>
+                    <div style="clear:both"></div>
+                `;
+                contenedor.appendChild(div);
+                t += item.precio;
+            });
+            totalElement.textContent = t.toFixed(2);
+        }
+
+        function eliminar(i) { carrito.splice(i, 1); actualizarCarrito(); }
+
+        function finalizarCompra() {
+            if (carrito.length === 0) return;
+            let m = 'Pedido:\n';
+            let total = 0;
+            carrito.forEach(i => {
+                m += `- ${i.nombre} ${i.playerID ? '[ID:'+i.playerID+']' : ''}: ${i.precio.toFixed(2)}€\n`;
+                total += i.precio;
+            });
+            m += `\nTotal: ${total.toFixed(2)}€`;
+            window.open(`https://wa.me/50588385491?text=${encodeURIComponent(m)}`, '_blank');
+        }
+
+        renderizarProductos();
+    </script>
+</body>
+</html>
